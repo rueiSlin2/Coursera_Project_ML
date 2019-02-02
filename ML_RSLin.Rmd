@@ -1,0 +1,169 @@
+---
+title: "Coursera Project - Practical Machine Learning"
+author: "Ruei Shiuan Lin"
+date: "2/1/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+
+
+```{r}
+library(caret)
+setwd("~/Downloads")
+trainData <- read.csv("pml-training (1).csv")
+testData <- read.csv("pml-testing (1).csv")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+str(trainData)
+str(testData)
+unique(trainData$user_name)
+unique(testData$user_name)
+```
+break
+```{r}
+carlData <- trainData[trainData$user_name == "carlitos",]
+table(carlData$cvtd_timestamp, carlData$classe)
+carlData$time_numb[carlData$cvtd_timestamp == "05/12/2011 11:23"] <- 1
+carlData$time_numb[carlData$cvtd_timestamp == "05/12/2011 11:24"] <- 2
+carlData$time_numb[carlData$cvtd_timestamp == "05/12/2011 11:25"] <- 3
+
+adelData <- trainData[trainData$user_name == "adelmo",]
+table(adelData$cvtd_timestamp, adelData$classe)
+adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:32"] <- 1
+adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:33"] <- 2
+adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:34"] <- 3
+adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:35"] <- 4
+
+charlData <- trainData[trainData$user_name == "charles",]
+table(charlData$cvtd_timestamp, charlData$classe)
+charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:56"] <- 1
+charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:57"] <- 2
+charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:58"] <- 3
+charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:59"] <- 4
+
+euriData <- trainData[trainData$user_name == "eurico",]
+table(euriData$cvtd_timestamp, euriData$classe)
+euriData$time_numb[euriData$cvtd_timestamp == "28/11/2011 14:13"] <- 1
+euriData$time_numb[euriData$cvtd_timestamp == "28/11/2011 14:14"] <- 2
+euriData$time_numb[euriData$cvtd_timestamp == "28/11/2011 14:15"] <- 3
+
+jerData <- trainData[trainData$user_name == "jeremy",]
+table(jerData$cvtd_timestamp, jerData$classe)
+jerData$time_numb[jerData$cvtd_timestamp == "30/11/2011 17:10"] <- 1
+jerData$time_numb[jerData$cvtd_timestamp == "30/11/2011 17:11"] <- 2
+jerData$time_numb[jerData$cvtd_timestamp == "30/11/2011 17:12"] <- 3
+
+pedData <- trainData[trainData$user_name == "pedro",]
+table(pedData$cvtd_timestamp, pedData$classe)
+pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:22"] <- 1
+pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:23"] <- 2
+pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:24"] <- 3
+
+newData <- rbind(adelData, carlData, charlData, euriData, jerData, pedData)
+```
+break
+```{r}
+inTrain <- createDataPartition(newData$classe, p = 3/4)[[1]]
+newTraining <- newData[inTrain,]
+newTesting <- newData[-inTrain,]
+```
+break
+```{r}
+newTrainClean <- newTraining[, -c(1:7)]
+newTestClean <- newTesting[, -c(1:7)]
+newTrainClean[newTrainClean == ""] <- NA
+newTrainClean[newTrainClean == "#DIV/0!"] <- NA
+newTrainClean[newTrainClean == "<NA>"] <- NA
+col.has.na <- apply(newTrainClean, 2, function(x){any(is.na(x))})
+newTrainCleanXna <- newTrainClean[,!col.has.na]
+newTestClean[newTestClean == ""] <- NA
+newTestClean[newTestClean == "#DIV/0!"] <- NA
+newTestClean[newTestClean == "<NA>"] <- NA
+col.has.na2 <- apply(newTestClean, 2, function(x){any(is.na(x))})
+newTestCleanXna <- newTestClean[,!col.has.na2]
+```
+break
+```{r}
+set.seed(5678)
+modelFitRF <- train(classe~., data = newTrainCleanXna, method = "rf")
+modelFitRF
+testpredRF <- predict(modelFitRF, newdata = newTestCleanXna)
+confMatRF <- confusionMatrix(testpredRF, newTestCleanXna$classe)
+confMatRF
+```
+break
+```{r}
+trControl <- trainControl(method = "cv", number = 5)
+modelFitCT <- train(classe~., data = newTrainCleanXna, method = "rpart", trControl=trControl)
+modelFitCT
+testpredCT <- predict(modelFitCT, newdata = newTestCleanXna)
+confMatCT <- confusionMatrix(testpredCT, newTestCleanXna$classe)
+confMatCT
+```
+break
+```{r}
+modelFitGM <- train(classe~., data = newTrainCleanXna, method = "gbm")
+modelFitGM
+testpredGM <- predict(modelFitGM, newdata = newTestCleanXna)
+confMatGM <- confusionMatrix(testpredGM, newTestCleanXna$classe)
+confMatGM
+```
+break
+```{r}
+carlTestData <- testData[testData$user_name == "carlitos",]
+table(carlTestData$cvtd_timestamp, carlTestData$classe)
+carlTestData$time_numb[carlTestData$cvtd_timestamp == "05/12/2011 11:24"] <- 2
+
+adelTestData <- testData[testData$user_name == "adelmo",]
+table(adelTestData$cvtd_timestamp)
+adelTestData$time_numb[adelTestData$cvtd_timestamp == "02/12/2011 13:33"] <- 2
+
+charlTestData <- testData[testData$user_name == "charles",]
+table(charlTestData$cvtd_timestamp)
+charlTestData$time_numb[charlTestData$cvtd_timestamp == "02/12/2011 14:57"] <- 2
+
+euriTestData <- testData[testData$user_name == "eurico",]
+table(euriTestData$cvtd_timestamp)
+euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:13"] <- 1
+euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:14"] <- 2
+euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:15"] <- 3
+
+jerTestData <- testData[testData$user_name == "jeremy",]
+table(jerTestData$cvtd_timestamp)
+jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:10"] <- 1
+jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:11"] <- 2
+jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:12"] <- 3
+
+pedTestData <- testData[testData$user_name == "pedro",]
+table(pedTestData$cvtd_timestamp)
+pedTestData$time_numb[pedTestData$cvtd_timestamp == "05/12/2011 14:22"] <- 1
+pedTestData$time_numb[pedTestData$cvtd_timestamp == "05/12/2011 14:23"] <- 2
+
+toPredData <- rbind(adelTestData, carlTestData, charlTestData, euriTestData, jerTestData, pedTestData)
+toPredDataClean <- toPredData[, -c(1:7)]
+toPredDataClean[toPredDataClean == ""] <- NA
+toPredDataClean[toPredDataClean == "#DIV/0!"] <- NA
+toPredDataClean[toPredDataClean == "<NA>"] <- NA
+col.has.na <- apply(toPredDataClean, 2, function(x){any(is.na(x))})
+toPredDataCleanXna <- toPredDataClean[,!col.has.na]
+```
+break
+```{r}
+predResult <- predict(modelFitRF, newdata = toPredDataCleanXna)
+```
+
+## Reference
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
