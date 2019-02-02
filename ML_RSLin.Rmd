@@ -15,23 +15,25 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
+# Load "caret" package and two downloaded data files
 library(caret)
 setwd("~/Downloads")
 trainData <- read.csv("pml-training (1).csv")
 testData <- read.csv("pml-testing (1).csv")
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+## A glance at the datasets
+The first seven columns contain personal information, case number, date/time, ... Among them, I find for each person, there is a association between "classe" and "cvtd_timestamp", i.e. classe A - E are roughly found orderly in time (please see the next section). In addition, missing values (NA, "", and "#DIV/0!") are found in most rows. It would be better for training the model using the column variables without any missing values (please see "Preprocessing the training data").
 
 ```{r}
+# A quick look at the datasets
 str(trainData)
 str(testData)
 unique(trainData$user_name)
 unique(testData$user_name)
 ```
-break
+## The "cvtd_timestamp" data transformation
+
 ```{r}
 carlData <- trainData[trainData$user_name == "carlitos",]
 table(carlData$cvtd_timestamp, carlData$classe)
@@ -73,13 +75,13 @@ pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:24"] <- 3
 
 newData <- rbind(adelData, carlData, charlData, euriData, jerData, pedData)
 ```
-break
+## The "training" dataset partition for model validation
 ```{r}
 inTrain <- createDataPartition(newData$classe, p = 3/4)[[1]]
 newTraining <- newData[inTrain,]
 newTesting <- newData[-inTrain,]
 ```
-break
+## Preprocessing the training data
 ```{r}
 newTrainClean <- newTraining[, -c(1:7)]
 newTestClean <- newTesting[, -c(1:7)]
@@ -94,7 +96,7 @@ newTestClean[newTestClean == "<NA>"] <- NA
 col.has.na2 <- apply(newTestClean, 2, function(x){any(is.na(x))})
 newTestCleanXna <- newTestClean[,!col.has.na2]
 ```
-break
+## The random forest prediction and its validation
 ```{r}
 set.seed(5678)
 modelFitRF <- train(classe~., data = newTrainCleanXna, method = "rf")
@@ -103,7 +105,7 @@ testpredRF <- predict(modelFitRF, newdata = newTestCleanXna)
 confMatRF <- confusionMatrix(testpredRF, newTestCleanXna$classe)
 confMatRF
 ```
-break
+## The classification tree prediction and its validation
 ```{r}
 trControl <- trainControl(method = "cv", number = 5)
 modelFitCT <- train(classe~., data = newTrainCleanXna, method = "rpart", trControl=trControl)
@@ -112,7 +114,7 @@ testpredCT <- predict(modelFitCT, newdata = newTestCleanXna)
 confMatCT <- confusionMatrix(testpredCT, newTestCleanXna$classe)
 confMatCT
 ```
-break
+## The boosted prediction and its validation
 ```{r}
 modelFitGM <- train(classe~., data = newTrainCleanXna, method = "gbm")
 modelFitGM
@@ -120,7 +122,7 @@ testpredGM <- predict(modelFitGM, newdata = newTestCleanXna)
 confMatGM <- confusionMatrix(testpredGM, newTestCleanXna$classe)
 confMatGM
 ```
-break
+## preprocessing the testing data
 ```{r}
 carlTestData <- testData[testData$user_name == "carlitos",]
 table(carlTestData$cvtd_timestamp, carlTestData$classe)
@@ -159,7 +161,7 @@ toPredDataClean[toPredDataClean == "<NA>"] <- NA
 col.has.na <- apply(toPredDataClean, 2, function(x){any(is.na(x))})
 toPredDataCleanXna <- toPredDataClean[,!col.has.na]
 ```
-break
+## The testing data prediction by the random forest model
 ```{r}
 predResult <- predict(modelFitRF, newdata = toPredDataCleanXna)
 ```
