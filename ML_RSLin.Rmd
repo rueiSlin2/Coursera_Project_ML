@@ -22,7 +22,7 @@ testData <- read.csv("pml-testing (1).csv")
 ```
 
 ## A glance at the datasets
-The first seven columns contain personal information, case number, date/time, ... Among them, I find for each person, there is a association between "classe" and "cvtd_timestamp", i.e. classe A - E are roughly found orderly in time (please see the next section). In addition, missing values (NA, "", and "#DIV/0!") are found in most rows. It would be better for training the model using the column variables without any missing values (please see "Preprocessing the training data").
+The first seven columns contain personal information, case number, date/time, ... The missing values (NA, "", and "#DIV/0!") are found in most rows. It would be better for training the model using the column variables without any missing values (please see "Preprocessing the training data").
 
 ```{r}
 # A quick look at the datasets
@@ -32,74 +32,33 @@ unique(trainData$user_name)
 unique(testData$user_name)
 ```
 
-## The "cvtd_timestamp" data transformation
-I find "classe vs cvtd_timestamp" association for each person. In this regard, a new column (time_numb) is generated for recording the timestamps in a normalized manner.
-```{r}
-# Generating a "time_numb"" column from "cvtd_timestamp"
-carlData <- trainData[trainData$user_name == "carlitos",]
-carlData$time_numb[carlData$cvtd_timestamp == "05/12/2011 11:23"] <- 1
-carlData$time_numb[carlData$cvtd_timestamp == "05/12/2011 11:24"] <- 2
-carlData$time_numb[carlData$cvtd_timestamp == "05/12/2011 11:25"] <- 3
-
-adelData <- trainData[trainData$user_name == "adelmo",]
-adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:32"] <- 1
-adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:33"] <- 2
-adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:34"] <- 3
-adelData$time_numb[adelData$cvtd_timestamp == "02/12/2011 13:35"] <- 4
-
-charlData <- trainData[trainData$user_name == "charles",]
-charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:56"] <- 1
-charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:57"] <- 2
-charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:58"] <- 3
-charlData$time_numb[charlData$cvtd_timestamp == "02/12/2011 14:59"] <- 4
-
-euriData <- trainData[trainData$user_name == "eurico",]
-euriData$time_numb[euriData$cvtd_timestamp == "28/11/2011 14:13"] <- 1
-euriData$time_numb[euriData$cvtd_timestamp == "28/11/2011 14:14"] <- 2
-euriData$time_numb[euriData$cvtd_timestamp == "28/11/2011 14:15"] <- 3
-
-jerData <- trainData[trainData$user_name == "jeremy",]
-jerData$time_numb[jerData$cvtd_timestamp == "30/11/2011 17:10"] <- 1
-jerData$time_numb[jerData$cvtd_timestamp == "30/11/2011 17:11"] <- 2
-jerData$time_numb[jerData$cvtd_timestamp == "30/11/2011 17:12"] <- 3
-
-pedData <- trainData[trainData$user_name == "pedro",]
-pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:22"] <- 1
-pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:23"] <- 2
-pedData$time_numb[pedData$cvtd_timestamp == "05/12/2011 14:24"] <- 3
-# Combined all to form a new training dataset
-newData <- rbind(adelData, carlData, charlData, euriData, jerData, pedData)
-plot(newData$time_numb, newData$classe)
-```
-From the "time_numb vs classe" plot, the association is revealed.
-
 ## The "training" dataset partition for model validation
 I divide the new training dataset into training portion (75%) and validation portion (25%).
 ```{r}
 # Data partition for training and validation
-inTrain <- createDataPartition(newData$classe, p = 3/4)[[1]]
-newTraining <- newData[inTrain,]
-newTesting <- newData[-inTrain,]
+inTrain <- createDataPartition(trainData$classe, p = 3/4)[[1]]
+Training <- trainData[inTrain,]
+Testing <- trainData[-inTrain,]
 ```
 
 ## Preprocessing the training data
 Three preprocessing are taken for the training and validation datasets: removing the first seven columns, replacing missing values with NA, and removing the columns containing NA.
 ```{r}
 # Remove the first seven columns
-newTrainClean <- newTraining[, -c(1:7)]
-newTestClean <- newTesting[, -c(1:7)]
+TrainClean <- Training[, -c(1:7)]
+TestClean <- Testing[, -c(1:7)]
 # Assign "NA" to missing values
-newTrainClean[newTrainClean == ""] <- NA
-newTrainClean[newTrainClean == "#DIV/0!"] <- NA
-newTrainClean[newTrainClean == "<NA>"] <- NA
-newTestClean[newTestClean == ""] <- NA
-newTestClean[newTestClean == "#DIV/0!"] <- NA
-newTestClean[newTestClean == "<NA>"] <- NA
+TrainClean[TrainClean == ""] <- NA
+TrainClean[TrainClean == "#DIV/0!"] <- NA
+TrainClean[TrainClean == "<NA>"] <- NA
+TestClean[TestClean == ""] <- NA
+TestClean[TestClean == "#DIV/0!"] <- NA
+TestClean[TestClean == "<NA>"] <- NA
 # Remove columns containing "NA"
-col.has.na <- apply(newTrainClean, 2, function(x){any(is.na(x))})
-newTrainCleanXna <- newTrainClean[,!col.has.na]
-col.has.na2 <- apply(newTestClean, 2, function(x){any(is.na(x))})
-newTestCleanXna <- newTestClean[,!col.has.na2]
+col.has.na <- apply(TrainClean, 2, function(x){any(is.na(x))})
+TrainCleanXna <- TrainClean[,!col.has.na]
+col.has.na2 <- apply(TestClean, 2, function(x){any(is.na(x))})
+TestCleanXna <- TestClean[,!col.has.na2]
 ```
 
 ## The random forest prediction and its validation
@@ -107,11 +66,11 @@ At first, I train a random forest predictor and perform a validation to find its
 ```{r}
 # Training a random forest predictor
 set.seed(5678)
-modelFitRF <- train(classe~., data = newTrainCleanXna, method = "rf")
+modelFitRF <- train(classe~., data = TrainCleanXna, method = "rf")
 modelFitRF
 # Validating the random forest model
-testpredRF <- predict(modelFitRF, newdata = newTestCleanXna)
-confMatRF <- confusionMatrix(testpredRF, newTestCleanXna$classe)
+testpredRF <- predict(modelFitRF, newdata = TestCleanXna)
+confMatRF <- confusionMatrix(testpredRF, TestCleanXna$classe)
 confMatRF
 ```
 The accuracy is pretty good. After checking the other two methods, I decided to use this random forest predictor for the project prediction quiz.
@@ -121,11 +80,11 @@ Next, a classification tree predictor is constructed and validated.
 ```{r}
 # Training a classification tree predictor
 trControl <- trainControl(method = "cv", number = 5)
-modelFitCT <- train(classe~., data = newTrainCleanXna, method = "rpart", trControl=trControl)
+modelFitCT <- train(classe~., data = TrainCleanXna, method = "rpart", trControl=trControl)
 modelFitCT
 # Validating the classification tree model
-testpredCT <- predict(modelFitCT, newdata = newTestCleanXna)
-confMatCT <- confusionMatrix(testpredCT, newTestCleanXna$classe)
+testpredCT <- predict(modelFitCT, newdata = TestCleanXna)
+confMatCT <- confusionMatrix(testpredCT, TestCleanXna$classe)
 confMatCT
 ```
 The accuracy is much less than the random forest model.
@@ -134,14 +93,14 @@ The accuracy is much less than the random forest model.
 Finally, a boosted predictor is constructed and validated.
 ```{r}
 # Training a boosted predictor
-modelFitGM <- train(classe~., data = newTrainCleanXna, method = "gbm", verbose = FALSE)
+modelFitGM <- train(classe~., data = TrainCleanXna, method = "gbm", verbose = FALSE)
 ```
 Now let's see the model and its validation.
 ```{r}
 modelFitGM
 # Validating the boosted model
-testpredGM <- predict(modelFitGM, newdata = newTestCleanXna)
-confMatGM <- confusionMatrix(testpredGM, newTestCleanXna$classe)
+testpredGM <- predict(modelFitGM, newdata = TestCleanXna)
+confMatGM <- confusionMatrix(testpredGM, TestCleanXna$classe)
 confMatGM
 ```
 The accuracy is pretty good but is not better than the random forest model.
@@ -150,31 +109,7 @@ The accuracy is pretty good but is not better than the random forest model.
 Now the random forest predictor will be used for the prediction quiz.
 ```{r}
 # Preprocessing and transforming the test data for the prediciton quiz
-carlTestData <- testData[testData$user_name == "carlitos",]
-carlTestData$time_numb[carlTestData$cvtd_timestamp == "05/12/2011 11:24"] <- 2
-
-adelTestData <- testData[testData$user_name == "adelmo",]
-adelTestData$time_numb[adelTestData$cvtd_timestamp == "02/12/2011 13:33"] <- 2
-
-charlTestData <- testData[testData$user_name == "charles",]
-charlTestData$time_numb[charlTestData$cvtd_timestamp == "02/12/2011 14:57"] <- 2
-
-euriTestData <- testData[testData$user_name == "eurico",]
-euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:13"] <- 1
-euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:14"] <- 2
-euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:15"] <- 3
-
-jerTestData <- testData[testData$user_name == "jeremy",]
-jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:10"] <- 1
-jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:11"] <- 2
-jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:12"] <- 3
-
-pedTestData <- testData[testData$user_name == "pedro",]
-pedTestData$time_numb[pedTestData$cvtd_timestamp == "05/12/2011 14:22"] <- 1
-pedTestData$time_numb[pedTestData$cvtd_timestamp == "05/12/2011 14:23"] <- 2
-
-toPredData <- rbind(adelTestData, carlTestData, charlTestData, euriTestData, jerTestData, pedTestData)
-toPredDataClean <- toPredData[, -c(1:7)]
+toPredDataClean <- testData[, -c(1:7)]
 toPredDataClean[toPredDataClean == ""] <- NA
 toPredDataClean[toPredDataClean == "#DIV/0!"] <- NA
 toPredDataClean[toPredDataClean == "<NA>"] <- NA
