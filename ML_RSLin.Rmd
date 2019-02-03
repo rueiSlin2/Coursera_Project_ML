@@ -134,7 +134,10 @@ The accuracy is much less than the random forest model.
 Finally, a boosted predictor is constructed and validated.
 ```{r}
 # Training a boosted predictor
-modelFitGM <- train(classe~., data = newTrainCleanXna, method = "gbm")
+modelFitGM <- train(classe~., data = newTrainCleanXna, method = "gbm", verbose = FALSE)
+```
+Now let's see the model and its validation.
+```{r}
 modelFitGM
 # Validating the boosted model
 testpredGM <- predict(modelFitGM, newdata = newTestCleanXna)
@@ -148,31 +151,25 @@ Now the random forest predictor will be used for the prediction quiz.
 ```{r}
 # Preprocessing and transforming the test data for the prediciton quiz
 carlTestData <- testData[testData$user_name == "carlitos",]
-table(carlTestData$cvtd_timestamp, carlTestData$classe)
 carlTestData$time_numb[carlTestData$cvtd_timestamp == "05/12/2011 11:24"] <- 2
 
 adelTestData <- testData[testData$user_name == "adelmo",]
-table(adelTestData$cvtd_timestamp)
 adelTestData$time_numb[adelTestData$cvtd_timestamp == "02/12/2011 13:33"] <- 2
 
 charlTestData <- testData[testData$user_name == "charles",]
-table(charlTestData$cvtd_timestamp)
 charlTestData$time_numb[charlTestData$cvtd_timestamp == "02/12/2011 14:57"] <- 2
 
 euriTestData <- testData[testData$user_name == "eurico",]
-table(euriTestData$cvtd_timestamp)
 euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:13"] <- 1
 euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:14"] <- 2
 euriTestData$time_numb[euriTestData$cvtd_timestamp == "28/11/2011 14:15"] <- 3
 
 jerTestData <- testData[testData$user_name == "jeremy",]
-table(jerTestData$cvtd_timestamp)
 jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:10"] <- 1
 jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:11"] <- 2
 jerTestData$time_numb[jerTestData$cvtd_timestamp == "30/11/2011 17:12"] <- 3
 
 pedTestData <- testData[testData$user_name == "pedro",]
-table(pedTestData$cvtd_timestamp)
 pedTestData$time_numb[pedTestData$cvtd_timestamp == "05/12/2011 14:22"] <- 1
 pedTestData$time_numb[pedTestData$cvtd_timestamp == "05/12/2011 14:23"] <- 2
 
@@ -190,6 +187,7 @@ The final answer is as followed.
 ```{r}
 # Answering the project prediction quiz
 predResult <- predict(modelFitRF, newdata = toPredDataCleanXna)
+predResult
 ```
 
 ## Reference
